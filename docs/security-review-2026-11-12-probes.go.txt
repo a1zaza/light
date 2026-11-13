@@ -1,0 +1,153 @@
+package server
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/distribution/distribution/v3/registry/storage"
+	driver "github.com/distribution/distribution/v3/registry/storage/driver"
+	"io"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"light/internal/store"
+)
+
+func TestSecurityAuditDeletionOfStagedBlob(t *testing.T) {
+	f := newFixture(t)
+	a, b := "audit/published", "audit/pending"
+	ta, tb := f.token(a, true), f.token(b, true)
+	_, _, layer := f.image(a, "latest", ta, "amd64")
+	f.blob(b, tb, []byte("shared layer contents, bytes remain intact"))
+	f.status(f.request("HEAD", "/v2/"+b+"/blobs/"+layer, "", tb, false), 200)
+	names, err := f.reg.Names(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := false
+	for _, n := range names {
+		if n == b {
+			seen = true
+		}
+	}
+	if seen {
+		t.Fatal("expected incomplete repository absent from catalog")
+	}
+	p := f.preview(a, "latest")
+	body, _ := json.Marshal(map[string]any{"id": p["id"]})
+	f.status(f.request("POST", "/api/admin/delete", string(body), "", true), 200)
+	after := f.request("HEAD", "/v2/"+b+"/blobs/"+layer, "", tb, false)
+	if after.Code != 404 {
+		t.Fatalf("probe no longer reproduces, status=%d", after.Code)
+	}
+	t.Log("CONFIRMED: uploaded layer in unpublished repository changes HEAD 200 -> 404 after deleting another repository tag")
+}
+
+func TestSecurityAuditGCOfStagedBlob(t *testing.T) {
+	f := newFixture(t)
+	name := "audit/upload-pending"
+	token := f.token(name, true)
+	layer := f.blob(name, token, []byte("newly uploaded content with manifest not sent yet"))
+	f.status(f.request("HEAD", "/v2/"+name+"/blobs/"+layer, "", token, false), 200)
+	if err := f.reg.GC(context.Background(), false); err != nil {
+		t.Fatal(err)
+	}
+	f.status(f.request("HEAD", "/v2/"+name+"/blobs/"+layer, "", token, false), 404)
+	t.Log("CONFIRMED: GC collects a fresh completed blob between upload and manifest publication")
+}
+
+func TestSecurityAuditProxyAuthenticationDenial(t *testing.T) {
+	f := newFixture(t)
+	for i := 0; i < 11; i++ {
+		f.status(f.request("POST", "/api/session", `{"username":"invalid","password":"invalid-password"}`, "", false), 401)
+	}
+	good := f.request("POST", "/api/session", `{"username":"admin","password":"test-password-12345"}`, "", false)
+	f.status(good, 429)
+	t.Log("CONFIRMED: one client behind same reverse-proxy RemoteAddr exhausts the entire admin login bucket")
+}
+
+func TestSecurityAuditPasswordRotationLoginRace(t *testing.T) {
+	replacement, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer replacement.Close()
+	if err = replacement.Init("admin", "new-password-12345"); err != nil {
+		t.Fatal(err)
+	}
+	next := replacement.Snapshot().Account
+	next.Revision = 2
+	for attempt := 0; attempt < 8; attempt++ {
+		f := newFixture(t)
+		done := make(chan *httptest.ResponseRecorder, 1)
+		go func() {
+			done <- f.request("POST", "/api/session", `{"username":"admin","password":"test-password-12345"}`, "", false)
+		}()
+		time.Sleep(5 * time.Millisecond)
+		if err = f.store.Change(func(st *store.State) error { st.Account = next; return nil }); err != nil {
+			t.Fatal(err)
+		}
+		response := <-done
+		if response.Code != 200 {
+			continue
+		}
+		cookies := response.Result().Cookies()
+		if len(cookies) == 0 {
+			t.Fatal("missing cookie")
+		}
+		req := httptest.NewRequest("GET", "https://registry.test/api/admin/robots", nil)
+		req.AddCookie(cookies[0])
+		out := httptest.NewRecorder()
+		f.server.ServeHTTP(out, req)
+		if out.Code == 200 {
+			t.Log(fmt.Sprintf("CONFIRMED: old-password login concurrent with password rotation obtains current revision session (attempt %d)", attempt+1))
+			return
+		}
+	}
+	t.Fatal("race not reproduced")
+}
+
+type auditCountingDriver struct {
+	driver.StorageDriver
+	reads int
+}
+
+func (d *auditCountingDriver) Reader(ctx context.Context, path string, offset int64) (io.ReadCloser, error) {
+	if strings.HasSuffix(path, "/data") {
+		d.reads++
+	}
+	return d.StorageDriver.Reader(ctx, path, offset)
+}
+func (d *auditCountingDriver) GetContent(ctx context.Context, path string) ([]byte, error) {
+	if strings.HasSuffix(path, "/data") {
+		d.reads++
+	}
+	return d.StorageDriver.GetContent(ctx, path)
+}
+func TestSecurityAuditPublicQueryScansUnmatchedTags(t *testing.T) {
+	f := newFixture(t)
+	name := "audit/public-load"
+	token := f.token(name, true)
+	for i := 0; i < 25; i++ {
+		f.image(name, fmt.Sprintf("tag-%02d", i), token, fmt.Sprintf("arch-%02d", i))
+	}
+	f.visibility(name, true, 0)
+	counter := &auditCountingDriver{StorageDriver: f.reg.Driver}
+	ns, err := storage.NewRegistry(context.Background(), counter, storage.EnableDelete)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.reg.Namespace = ns
+	response := f.request("GET", "/api/public/repository?name="+name+"&q=tag-00&page=1", "", "", false)
+	f.status(response, 200)
+	var body struct {
+		Items []json.RawMessage `json:"items"`
+	}
+	f.decode(response, &body)
+	if len(body.Items) != 1 || counter.reads < 25 {
+		t.Fatalf("unexpected query result: items=%d blob data reads=%d", len(body.Items), counter.reads)
+	}
+	t.Logf("CONFIRMED: unauthenticated filtered one-item response reads %d blob data streams across 25 tags", counter.reads)
+}

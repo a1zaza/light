@@ -1,0 +1,189 @@
+{
+  "registry": "127.0.0.1:5080",
+  "source": "Docker Official Image alpine:3.24",
+  "repositories": [
+    {
+      "repository": "retest-20261112-170624-demo-alpine",
+      "depth": 1,
+      "tags": [
+        "3.24",
+        "amd64",
+        "latest"
+      ],
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        }
+      ],
+      "aliasDigest": "sha256:0f49f331d9212aff11b932863be4eb01cdf962969aa86dab7d1ee21ac6f5f52b",
+      "children": [
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:0f49f331d9212aff11b932863be4eb01cdf962969aa86dab7d1ee21ac6f5f52b",
+          "size": 1022,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        }
+      ]
+    },
+    {
+      "repository": "retest-20261112-170624-demo/alpine",
+      "depth": 2,
+      "tags": [
+        "dev",
+        "latest",
+        "test"
+      ],
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        }
+      ],
+      "aliasDigest": "sha256:0f49f331d9212aff11b932863be4eb01cdf962969aa86dab7d1ee21ac6f5f52b",
+      "children": [
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:0f49f331d9212aff11b932863be4eb01cdf962969aa86dab7d1ee21ac6f5f52b",
+          "size": 1022,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        }
+      ]
+    },
+    {
+      "repository": "retest-20261112-170624-demo/base/alpine",
+      "depth": 3,
+      "tags": [
+        "3.24",
+        "amd64",
+        "arm64",
+        "latest",
+        "stable"
+      ],
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        }
+      ],
+      "aliasDigest": "sha256:2d19e1b1b9f9a06d4aa12409e2a0ce8a8c5c20b20750bf4a00dded558806d3c0",
+      "children": [
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:0f49f331d9212aff11b932863be4eb01cdf962969aa86dab7d1ee21ac6f5f52b",
+          "size": 1022,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:1829893486be257df5049ab3b7fc95afbd0fc09d89803cbc580bda1ba5386b29",
+          "size": 1025,
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux",
+            "variant": "v8"
+          }
+        }
+      ]
+    },
+    {
+      "repository": "retest-20261112-170624-demo/team/backend/runtime",
+      "depth": 4,
+      "tags": [
+        "amd64",
+        "arm64",
+        "latest",
+        "v1",
+        "v1.0.0"
+      ],
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        }
+      ],
+      "aliasDigest": "sha256:2d19e1b1b9f9a06d4aa12409e2a0ce8a8c5c20b20750bf4a00dded558806d3c0",
+      "children": [
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:0f49f331d9212aff11b932863be4eb01cdf962969aa86dab7d1ee21ac6f5f52b",
+          "size": 1022,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:1829893486be257df5049ab3b7fc95afbd0fc09d89803cbc580bda1ba5386b29",
+          "size": 1025,
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux",
+            "variant": "v8"
+          }
+        }
+      ]
+    }
+  ],
+  "totalTags": 16,
+  "testedAt": "2026-11-12T17:06:34.809156+08:00",
+  "runPrefix": "retest-20261112-170624-",
+  "validation": {
+    "verifiedTags": 16,
+    "verifiedUniqueBlobs": 4,
+    "uniqueBlobBytes": 8045506,
+    "dockerPulls": [
+      {
+        "registry": "127.0.0.1:5080",
+        "repository": "retest-20261112-170624-demo/base/alpine",
+        "platform": "linux/amd64",
+        "architecture": "amd64",
+        "verified": true
+      },
+      {
+        "registry": "127.0.0.1:5080",
+        "repository": "retest-20261112-170624-demo/base/alpine",
+        "platform": "linux/arm64/v8",
+        "architecture": "arm64",
+        "verified": true
+      },
+      {
+        "registry": "127.0.0.1:5174",
+        "repository": "retest-20261112-170624-demo/team/backend/runtime",
+        "platform": "linux/amd64",
+        "architecture": "amd64",
+        "verified": true
+      },
+      {
+        "registry": "127.0.0.1:5174",
+        "repository": "retest-20261112-170624-demo/team/backend/runtime",
+        "platform": "linux/arm64/v8",
+        "architecture": "arm64",
+        "verified": true
+      }
+    ],
+    "containersStarted": false,
+    "imagesBuilt": false,
+    "proxyVerifiedTags": 16
+  }
+}

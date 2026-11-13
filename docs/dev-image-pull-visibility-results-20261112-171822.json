@@ -1,0 +1,173 @@
+{
+  "startedAt": "2026-11-12T17:18:22.054451+08:00",
+  "repository": "demo/write-test",
+  "tag": "write-20261112-171550",
+  "imageDigest": "sha256:4803a65ab3eac464e23f18474ba698659ded70526cfbe98a878dcb4b1bc30521",
+  "phases": [
+    {
+      "phase": "private",
+      "public": false,
+      "testedAt": "2026-11-12T17:18:31.320000+08:00",
+      "checks": [
+        {
+          "port": 5080,
+          "publicMetadataStatus": 404,
+          "anonymousManifestStatus": 401,
+          "anonymousLayerVerified": true
+        },
+        {
+          "port": 5080,
+          "authenticated": false,
+          "allowed": false,
+          "dockerPullVerified": true,
+          "fileVerified": false
+        },
+        {
+          "port": 5080,
+          "authenticated": true,
+          "allowed": true,
+          "dockerPullVerified": true,
+          "fileVerified": true
+        },
+        {
+          "port": 5174,
+          "publicMetadataStatus": 404,
+          "anonymousManifestStatus": 401,
+          "anonymousLayerVerified": true
+        },
+        {
+          "port": 5174,
+          "authenticated": false,
+          "allowed": false,
+          "dockerPullVerified": true,
+          "fileVerified": false
+        },
+        {
+          "port": 5174,
+          "authenticated": true,
+          "allowed": true,
+          "dockerPullVerified": true,
+          "fileVerified": true
+        }
+      ]
+    },
+    {
+      "phase": "public",
+      "public": true,
+      "testedAt": "2026-11-12T17:19:20.256528+08:00",
+      "checks": [
+        {
+          "port": 5080,
+          "publicMetadataStatus": 200,
+          "anonymousManifestStatus": 200,
+          "anonymousLayerVerified": true,
+          "anonymousUploadStatus": 401,
+          "manifestAndAllBlobDigestsVerified": true,
+          "noStoreCacheHeadersVerified": true,
+          "publicImageCreatedTimePresent": true
+        },
+        {
+          "port": 5080,
+          "authenticated": false,
+          "allowed": true,
+          "dockerPullVerified": true,
+          "fileVerified": true
+        },
+        {
+          "port": 5080,
+          "authenticated": true,
+          "allowed": true,
+          "dockerPullVerified": true,
+          "fileVerified": true
+        },
+        {
+          "port": 5174,
+          "publicMetadataStatus": 200,
+          "anonymousManifestStatus": 200,
+          "anonymousLayerVerified": true,
+          "anonymousUploadStatus": 401,
+          "manifestAndAllBlobDigestsVerified": true,
+          "noStoreCacheHeadersVerified": true,
+          "publicImageCreatedTimePresent": true
+        },
+        {
+          "port": 5174,
+          "authenticated": false,
+          "allowed": true,
+          "dockerPullVerified": true,
+          "fileVerified": true
+        },
+        {
+          "port": 5174,
+          "authenticated": true,
+          "allowed": true,
+          "dockerPullVerified": true,
+          "fileVerified": true
+        }
+      ]
+    },
+    {
+      "phase": "private-restored",
+      "public": false,
+      "testedAt": "2026-11-12T17:19:58.646852+08:00",
+      "checks": [
+        {
+          "port": 5080,
+          "publicMetadataStatus": 404,
+          "anonymousManifestStatus": 401,
+          "anonymousLayerVerified": true,
+          "previousAnonymousTokenUnexpired": true,
+          "previousAnonymousTokenRejected": true
+        },
+        {
+          "port": 5080,
+          "authenticated": false,
+          "allowed": false,
+          "dockerPullVerified": true,
+          "fileVerified": false
+        },
+        {
+          "port": 5080,
+          "authenticated": true,
+          "allowed": true,
+          "dockerPullVerified": true,
+          "fileVerified": true
+        },
+        {
+          "port": 5174,
+          "publicMetadataStatus": 404,
+          "anonymousManifestStatus": 401,
+          "anonymousLayerVerified": true,
+          "previousAnonymousTokenUnexpired": true,
+          "previousAnonymousTokenRejected": true
+        },
+        {
+          "port": 5174,
+          "authenticated": false,
+          "allowed": false,
+          "dockerPullVerified": true,
+          "fileVerified": false
+        },
+        {
+          "port": 5174,
+          "authenticated": true,
+          "allowed": true,
+          "dockerPullVerified": true,
+          "fileVerified": true
+        }
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-12T17:19:58.647118+08:00",
+  "completed": true,
+  "summary": {
+    "dockerPullAttempts": 12,
+    "successfulPullsWithFileVerification": 8,
+    "expectedAnonymousPullRejections": 4,
+    "previousUnexpiredAnonymousTokensRejected": 2,
+    "finalVisibility": "private",
+    "temporaryCredentialsCleaned": true,
+    "localTestTagsCleaned": true,
+    "temporaryContainersCleaned": true
+  }
+}

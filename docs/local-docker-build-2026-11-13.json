@@ -1,0 +1,30 @@
+{
+  "builtAt": "2026-11-13T10:42:36+08:00",
+  "dockerfile": "deploy/Dockerfile",
+  "context": ".",
+  "command": "docker build --progress=plain -f deploy/Dockerfile -t light:local .",
+  "tag": "light:local",
+  "imageID": "sha256:2ec91ae2ee8530c779ca553b6c6ef2fcaa57cbb805dbb9acdda6e06eaa3f9804",
+  "platform": "linux/amd64",
+  "sizeBytes": 12800898,
+  "user": "1000:1000",
+  "workingDir": "/var/lib/light",
+  "entrypoint": [
+    "/usr/local/bin/light"
+  ],
+  "cmd": [
+    "serve"
+  ],
+  "healthcheck": [
+    "CMD",
+    "light",
+    "health",
+    "-url",
+    "http://127.0.0.1:5080/readyz"
+  ],
+  "frontendBuildPassed": true,
+  "backendBuildPassed": true,
+  "imageInspected": true,
+  "containersStarted": false,
+  "imagePushed": false
+}

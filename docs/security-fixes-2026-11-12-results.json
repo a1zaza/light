@@ -1,0 +1,41 @@
+{
+  "govulncheck": {
+    "config": {
+      "protocol_version": "v1.0.0",
+      "scanner_name": "govulncheck",
+      "scanner_version": "v1.9.0",
+      "db": "https://vuln.go.dev",
+      "db_last_modified": "2026-11-11T02:51:11Z",
+      "go_version": "go1.26.11",
+      "scan_level": "symbol",
+      "scan_mode": "source"
+    },
+    "findings": []
+  },
+  "validation": {
+    "goRaceTestsPassed": true,
+    "goVetPassed": true,
+    "frontendTypecheckPassed": true,
+    "frontendTestsPassed": 32,
+    "frontendFormatCheckPassed": true
+  },
+  "rateLimitHeader": {
+    "default": "disabled",
+    "environment": "LIGHT_RATE_LIMIT_IP_HEADER",
+    "flag": "-rate-limit-ip-header",
+    "example": "X-Light-Client-IP",
+    "fallback": "RemoteAddr"
+  },
+  "uploadProtectionHours": 24,
+  "productionImageBuildPerformed": false,
+  "developmentSmokeCheck": {
+    "goVersion": "go1.26.11",
+    "readyz": 200,
+    "registryWithoutCredentials": 401,
+    "adminWithoutSession": 401,
+    "vitePublicRepositories": 200,
+    "privateRepositoryPublicDetail": 404,
+    "rateLimitHeaderEnabled": false,
+    "existingImagesCollectedOrDeleted": false
+  }
+}

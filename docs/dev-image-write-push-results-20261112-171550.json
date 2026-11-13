@@ -1,0 +1,45 @@
+{
+  "testedAt": "2026-11-12T17:16:02.182088+08:00",
+  "registry": "127.0.0.1:5080",
+  "repository": "demo/write-test",
+  "tag": "write-20261112-171550",
+  "reference": "127.0.0.1:5080/demo/write-test:write-20261112-171550",
+  "platform": "linux/amd64",
+  "sourceDigest": "sha256:0f49f331d9212aff11b932863be4eb01cdf962969aa86dab7d1ee21ac6f5f52b",
+  "imageDigest": "sha256:4803a65ab3eac464e23f18474ba698659ded70526cfbe98a878dcb4b1bc30521",
+  "imageID": "sha256:4803a65ab3eac464e23f18474ba698659ded70526cfbe98a878dcb4b1bc30521",
+  "configCreated": "2026-11-12T17:16:01.733679491+08:00",
+  "baseCreated": "2026-11-05T18:00:28.583714131Z",
+  "user": "1000:1000",
+  "file": {
+    "path": "/tmp/light-write-test/record.json",
+    "content": {
+      "purpose": "light 镜像写入与推送测试",
+      "run": "20261112-171550",
+      "writtenAt": "2026-11-12T09:15:50.299221Z",
+      "source": "alpine:3.24",
+      "architecture": "amd64",
+      "user": "1000:1000"
+    },
+    "sha256": "7ff63537403306312beef3df9c5a69d076efd0a4251d98d8031d4fc80ea7b223"
+  },
+  "layers": {
+    "baseCount": 1,
+    "pushedCount": 2,
+    "newLayerDigest": "sha256:128136bbe34b4b086d7e8d23a9b7c49cfb2ee02386e345e295bab6516e0ad65a",
+    "newLayerCompressedBytes": 333,
+    "newLayerDiffID": "sha256:4ad7476d357d14db884ae47e82c53a8831c8cfc11b02356abf283d5b29403848"
+  },
+  "validation": {
+    "realDockerPush": true,
+    "remoteLayerDigestVerified": true,
+    "remoteFileContentVerified": true,
+    "newLayerOwnerVerified": true,
+    "dockerPullVerified": true,
+    "pulledContainerFileVerified": true,
+    "createdTimeVerified": true,
+    "containersRunAsRoot": false,
+    "containersNetwork": "none",
+    "imagesBuilt": false
+  }
+}

@@ -1,0 +1,21 @@
+.data/
+data/
+backups/
+bin/
+web/node_modules/
+web/dist/*
+!web/dist/.keep
+.env
+*.log
+coverage.out
+
+__pycache__/
+*.py[cod]
+
+# 本地代理配置与凭据
+.agents/
+.codex/
+.aws/
+.env.*
+!.env.example
+!.env.sample

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"golang.org/x/term"
+	"light/internal/hubproxy"
 	"light/internal/jsonfile"
 	"light/internal/registry"
 	"light/internal/server"
@@ -45,7 +46,6 @@ func run(args []string) error {
 	idle := f.Duration("transfer-idle-timeout", 5*time.Minute, "上传/下载空闲超时")
 	older := f.Duration("older-than", 7*24*time.Hour, "离线上传清理的最短闲置时间，至少 24h")
 	healthURL := f.String("url", "http://127.0.0.1:5080/readyz", "health 检查地址")
-	limitHeader := f.String("rate-limit-ip-header", os.Getenv("LIGHT_RATE_LIMIT_IP_HEADER"), "可信上层代理写入的限流 IP Header，默认禁用")
 	reserve := f.Uint64("reserve-bytes", 1<<30, "拒绝新上传的磁盘预留字节数")
 	if err := f.Parse(args[1:]); err != nil {
 		return err
@@ -75,10 +75,6 @@ func run(args []string) error {
 	}
 	if *maxUpload < 0 || *idle < time.Second || *older < 24*time.Hour {
 		return errors.New("上传上限不能为负，空闲超时至少 1s，上传清理年龄至少 24h")
-	}
-	header, err := server.ValidateRateLimitIPHeader(*limitHeader)
-	if err != nil {
-		return err
 	}
 	st, err := store.Open(*dir)
 	if err != nil {
@@ -137,6 +133,8 @@ func run(args []string) error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	runtimeSettings := st.Settings()
+
 	reg, err := registry.New(ctx, st, *reserve)
 	if err != nil {
 		return err
@@ -144,6 +142,12 @@ func run(args []string) error {
 	defer reg.Close()
 	reg.MaxUploadBytes = *maxUpload
 	reg.IdleTimeout = *idle
+	if args[0] == "serve" {
+		if err = reg.ConfigureHub(hubproxy.FromSettings(runtimeSettings, *reserve), nil); err != nil {
+			return err
+		}
+	}
+
 	if args[0] == "gc" || args[0] == "purge-uploads" {
 		if *dry == *execute {
 			return errors.New("GC 必须且只能选择 -dry-run 或 -execute")
@@ -191,7 +195,7 @@ func run(args []string) error {
 		fmt.Println(string(raw))
 		return err
 	}
-	app := server.New(st, reg, server.Options{RateLimitIPHeader: header})
+	app := server.New(st, reg)
 	defer app.Close()
 	httpServer := server.HTTPServer(app)
 	done := make(chan error, 1)

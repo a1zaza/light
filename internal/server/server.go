@@ -10,9 +10,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/distribution/reference"
+	"light/internal/config"
 	"light/internal/jsonfile"
 	"light/internal/maintenance"
 	"light/internal/registry"
@@ -49,16 +51,14 @@ type Server struct {
 	limits         map[string]limit
 	authSlots      chan struct{}
 	publicSlots    chan struct{}
-	clientIPHeader string
+	settingsMu     sync.Mutex
+	activeSettings atomic.Pointer[config.Settings]
 }
 
-type Options struct{ RateLimitIPHeader string }
-
-func New(st *store.Store, reg *registry.Registry, options ...Options) *Server {
+func New(st *store.Store, reg *registry.Registry) *Server {
 	s := &Server{Maintenance: maintenance.New(st, reg), Store: st, Registry: reg, mux: http.NewServeMux(), sessions: map[string]session{}, previews: map[string]preview{}, limits: map[string]limit{}, authSlots: make(chan struct{}, 8), publicSlots: make(chan struct{}, 4)}
-	if len(options) > 0 {
-		s.clientIPHeader = options[0].RateLimitIPHeader
-	}
+	active := st.Settings()
+	s.activeSettings.Store(&active)
 	s.mux.HandleFunc("/api/session", s.sessionHandler)
 	s.mux.HandleFunc("/api/admin/overview", s.admin(s.overview))
 	s.mux.HandleFunc("/api/admin/repositories", s.admin(s.repositories))
@@ -70,7 +70,10 @@ func New(st *store.Store, reg *registry.Registry, options ...Options) *Server {
 	s.mux.HandleFunc("/api/admin/delete", s.admin(s.deleteImage))
 	s.mux.HandleFunc("/api/admin/audit", s.admin(s.audit))
 	s.mux.HandleFunc("/api/admin/password", s.admin(s.password))
+	s.mux.HandleFunc("/api/admin/settings", s.admin(s.settings))
 	s.mux.HandleFunc("/api/admin/maintenance", s.admin(s.maintenance))
+	s.mux.HandleFunc("/api/admin/hub-cache", s.admin(s.hubCache))
+	reg.ClientIP = s.clientIP
 	s.mux.HandleFunc("/api/public/repositories", s.public(s.repositories))
 	s.mux.HandleFunc("/api/public/repository", s.public(s.repository))
 	s.mux.HandleFunc("/api/public/image", s.public(s.image))
@@ -788,7 +791,11 @@ func (s *Server) maintenance(w http.ResponseWriter, r *http.Request) {
 			legacy[key] = job
 		}
 	}
-	reply(w, 200, map[string]any{"active": state.Active, "jobs": state.Jobs, "error": state.Error, "catalogAt": at, "catalogError": indexError, "legacy": legacy})
+	var hub any
+	if cache := s.Registry.HubCache(); cache != nil {
+		hub = cache.Status()
+	}
+	reply(w, 200, map[string]any{"active": state.Active, "jobs": state.Jobs, "error": state.Error, "catalogAt": at, "catalogError": indexError, "legacy": legacy, "hub": hub})
 }
 func (s *Server) Close() { s.Maintenance.Close() }
 

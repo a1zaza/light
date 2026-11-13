@@ -17,6 +17,10 @@ COPY --from=frontend /src/web/dist/ ./web/dist/
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/light ./cmd/light
 
 FROM alpine:3.23
+LABEL org.opencontainers.image.title="light" \
+      org.opencontainers.image.description="个人 Docker/OCI 镜像仓库" \
+      org.opencontainers.image.source="https://github.com/a1zaza/light" \
+      org.opencontainers.image.url="https://github.com/a1zaza/light"
 RUN apk add --no-cache ca-certificates tzdata && \
     addgroup -S -g 1000 light && \
     adduser -S -D -H -u 1000 -G light light && \

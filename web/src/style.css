@@ -1850,3 +1850,19 @@ tr:hover td {
     flex-wrap: wrap;
   }
 }
+
+.application-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.application-switch-row p {
+  margin: 6px 0 0;
+}
+.application-effective summary {
+  cursor: pointer;
+}
+.application-effective .detail-list {
+  margin-top: 16px;
+}

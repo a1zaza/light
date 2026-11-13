@@ -1,6 +1,7 @@
 package main
 
 import (
+	"light/internal/config"
 	"light/internal/server"
 	"light/internal/store"
 	"strings"
@@ -32,7 +33,7 @@ func TestFixedListenAddress(t *testing.T) {
 }
 
 func TestRemovedDeploymentFlagsAreNotAccepted(t *testing.T) {
-	for _, flag := range []string{"-address", "-external-url"} {
+	for _, flag := range []string{"-address", "-external-url", "-rate-limit-ip-header"} {
 		t.Run(flag, func(t *testing.T) {
 			if err := run([]string{"serve", "-data", t.TempDir(), flag, "unused"}); err == nil {
 				t.Fatal("removed deployment flag was accepted")
@@ -41,8 +42,19 @@ func TestRemovedDeploymentFlagsAreNotAccepted(t *testing.T) {
 	}
 }
 
-func TestInvalidRateLimitHeaderRejectedBeforeOpeningData(t *testing.T) {
-	if err := run([]string{"serve", "-data", t.TempDir(), "-rate-limit-ip-header", "X-Light-IP\r\nInjected"}); err == nil || !strings.Contains(err.Error(), "Header") {
-		t.Fatalf("invalid header not rejected: %v", err)
+func TestRetiredEnvironmentDoesNotReplaceDefaults(t *testing.T) {
+	t.Setenv("LIGHT_HUB_PROXY_ENABLED", "true")
+	t.Setenv("LIGHT_HUB_CACHE_MAX_BYTES", "not-a-number")
+	t.Setenv("LIGHT_RATE_LIMIT_IP_HEADER", "X-Old-IP")
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	if st.Settings() != config.Default() {
+		t.Fatal("旧环境变量影响初始默认值")
+	}
+	if st.Snapshot().Settings != nil {
+		t.Fatal("首次读取写入了迁移配置")
 	}
 }

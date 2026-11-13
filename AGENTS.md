@@ -5,14 +5,16 @@
 - 架构和界面参考相邻项目 `../v2way`。相邻项目仅只读参考，不修改其文件、不读取或复制其运行数据，遵守资源许可证。
 - 新仓库默认私有；公开仓库支持匿名浏览和拉取，匿名用户不能推送。机器人统一推拉全部仓库，不实现逐令牌权限范围；管理操作仅允许管理员会话。
 - 仓库名称决定推拉路径，创建后不可修改。详情顶部为只读名称、备注输入栏及其右侧公开/私有开关，不提供设置弹窗或名称/拉取权限说明。
-- 当前使用、部署及维护说明见 `README.md`；功能与验证边界见 `docs/implementation-status.md`；历史记录保留在 `docs/changelogs/` 和独立实验报告，不在本文件追加操作流水。
+- 项目 GitHub 地址为 `https://github.com/a1zaza/light`，origin 为 `git@github.com:a1zaza/light`，默认分支 main；发布镜像路径为 `ghcr.io/a1zaza/light`。
+- Docker Hub 私有代理缓存已接入，默认关闭，在页面“系统设置 → 应用配置”启用，保存即时生效；配置与边界见 README 和 `docs/docker-hub-proxy-cache-design.md`。仅缺少仓库/tag/摘要时回源，自有引用优先；机器人认证必需，公开自有仓库的代理部分也不得匿名访问。清单每次重新获取，blob 完整校验提交后固定缓存 168 小时，不因读取续期。
+- 项目入口见 `README.md`，详细部署与维护说明见 `docs/operations.md`；功能与验证边界见 `docs/implementation-status.md`；历史记录保留在 `docs/changelogs/` 和独立实验报告，不在本文件追加操作流水。
 
 # 开发环境
 
 ## 工具与目录
 
 - 项目最低 Go 版本为 `1.26.11`，前端使用 Node.js 24、npm 11；依赖由 `go.mod`、`go.sum`、`web/package-lock.json` 管理。Go 自动工具链下载在模块缓存中完成，不替换系统 Go。
-- `cmd/light`：CLI 和进程入口；`internal/server`：管理/公开 API 与会话；`internal/registry`：Registry、引用扫描和回收适配；`internal/store`、`internal/jsonfile`：管理持久化；`internal/maintenance`：维护任务；`internal/requesturl`：请求地址与同源校验；`web/`：前端及内嵌资源。
+- `cmd/light`：CLI 和进程入口；`internal/server`：管理/公开 API 与会话；`internal/registry`：Registry、引用扫描和回收适配；`internal/store`、`internal/jsonfile`：管理持久化；`internal/maintenance`：维护任务；`internal/requesturl`：请求地址与同源校验；`internal/hubproxy`：受控 Hub 客户端、独立缓存与到期清理；`internal/config`：应用设置默认值与校验；`internal/storageutil`：缺失遍历根目录的适配；`web/`：前端及内嵌资源。
 - `.data` 是开发数据目录；Compose 将 `./data` 挂载到容器 `/var/lib/light`。两者不混用，不提交数据、凭据、依赖或构建产物。
 - 保留 `web/dist/.keep`。单程序发布需先构建前端再编译 Go；没有前端产物时后端提供提示页，开发界面通过 Vite 访问。
 
@@ -22,7 +24,7 @@
 - 后端：`go run ./cmd/light serve -data .data`，固定监听 `:5080`；前端：在 `web/` 执行 `npm ci --ignore-scripts` 和 `npm run dev -- --port 5174 --strictPort`，入口为 `http://127.0.0.1:5174`。
 - 后端检查：根目录 `go test -race ./...`、`go vet ./...`。前端检查：在 `web/` 执行 `npm run typecheck`、`npm test`、`npm run format:check`，不在根目录执行 npm 脚本。
 - 未经明确要求，不启动开发环境、不执行 Docker build、不自动运行发布构建。已有会话授权仅适用于其明确范围，文档中的命令不是执行授权。
-- 构建使用 `deploy/Dockerfile`，本地命令为 `docker build -f deploy/Dockerfile -t light:local .`。已验证 linux/amd64 本地打包，详见 `docs/local-docker-build-2026-11-13.json`；容器运行、Buildx 多平台和远程发布需分别验收。
+- 构建使用 `deploy/Dockerfile`，本地命令为 `docker build -f deploy/Dockerfile -t light:local .`。Compose 默认使用 `${LIGHT_IMAGE:-ghcr.io/a1zaza/light:latest}`，不包含 build 配置；本地构建部署需设置 `LIGHT_IMAGE=light:local`。发布工作流手动生成 latest/完整提交 SHA 标签，Git push 不授权也不自动执行镜像发布。已验证 linux/amd64 本地打包，详见 `docs/local-docker-build-2026-11-13-final.json`；容器运行、Buildx 多平台和远程发布需分别验收。
 
 ## 界面约定
 
@@ -46,7 +48,7 @@
 
 - 默认数据目录 `/var/lib/light`，监听固定为 `:5080`，没有 `-address`、`-external-url` 或外部域名白名单。页面复制命令使用 `window.location.host/origin`；认证 realm 取请求 Host/协议，上传 Location 为相对路径，JWT issuer 固定为 light。
 - 反代须保留 Host、认证头与 light Cookie，覆盖 X-Forwarded-Proto，不依赖 X-Forwarded-Host，不做 Registry/API 共享缓存。协议实际写响应头时须保持 `Cache-Control: no-store`。
-- 自定义限流 IP Header 通过 `-rate-limit-ip-header` 或 `LIGHT_RATE_LIMIT_IP_HEADER` 启用，默认禁用。唯一合法 IP 值用于限流/审计，缺失或非法时回退 RemoteAddr；反代必须覆盖该头且后端只能由受控代理访问，不直接信任 X-Forwarded-For。
+- 自定义限流 IP Header 在系统设置中填写，保存即时生效，默认禁用。唯一合法 IP 值用于限流/审计，缺失或非法时回退 RemoteAddr；反代必须覆盖该头且后端只能由受控代理访问，不直接信任 X-Forwarded-For。
 - 管理员认证返回实际校验的账户 revision，会话只能绑定该版本，不能再次读取新 revision 升级旧密码授权。管理写入保留同源与 CSRF 校验。
 - 机器人撤销与公开转私有均逐请求查询事实数据，不能依赖派生索引授权；已经开始的传输不保证立即中止。
 - 公开详情先按 tag/摘要筛选分页，再计算当前页元数据。公开 API 每 IP/路径 60 次/分钟、全局 4 并发和 15 秒计算预算，与大文件传输限制分开。
@@ -66,6 +68,22 @@
 - Registry 每进程仅创建一次，不以反复创建/销毁内核模拟重载。审计失败只告警；启动只修剪最新审计文件的不完整尾行，中间损坏停止追加并提示离线检查。
 - 索引是派生数据，写入/删除后失效，读取刷新，30 秒有效；可重建但不能修复管理快照或镜像内容。完整备份应停机复制整个数据目录并保护其中的秘密。
 
+## 应用设置
+
+- `management.json` 的可选 `settings` 保存限流 IP Header 与 5 项 Hub 配置，有独立 revision；无此字段时直接使用代码默认值，不读取、导入或迁移环境变量。`-rate-limit-ip-header` 已移除，Compose 不填写应用配置。
+- `/api/admin/settings` GET/PATCH 仅允许管理员会话，写入校验同源、CSRF 和设置版本；配置版本独立于账户、机器人、仓库修订。失败保留编辑，冲突需显式重新读取。
+- 保存即时生效：先准备必要的禁用缓存实例，再持久化设置，成功后更新 Hub 策略与原子配置快照；失败不发布新策略。设置写入与 Registry 关闭串行，不能在停止期间创建新缓存。Header 通过不可变原子快照读取，不修改正在并发读取的字符串。
+- Registry App 始终只创建一次；Hub 缓存第一次启用时创建，关闭只停止新代理请求，保留实例与已有缓存；再次启用复用。并发用共享在途计数管理，禁止替换正在使用的槽 channel。新超时只作用于新请求，降低容量/单 blob 上限不取消已经预留的下载，也不提前淘汰未过期对象。
+- API 返回 settings 和 effective，保存成功后立即一致；页面显示即时生效。容量以整数字节持久化，页面用 GiB 输入；超时 1–3600 整数秒，单 blob 最大 20 GiB、总容量最大 1 PiB、并发 1–32、Header 最长 128 字节。`LIGHT_IMAGE` 与 `TZ` 仍属于部署层；磁盘预留、上传限制等现有 CLI 参数不在本次迁移范围。
+
+## Docker Hub 缓存
+
+- 缓存仅存于独立 `hub-cache/registry/`，原始清单字节以 base64 保存在 `hub-cache/metadata/state.json`，避免 JSON 格式化改变摘要。快照最多 8 MiB、1024 份清单，blob 记录最多 16384；不得直接改内核存储路径或把缓存混入自有 Namespace。
+- 过期逻辑立即失效，每 5 分钟扫描；请求填充前也清理到期对象。清理排空在途请求，移除 blob 仓库链接和全局内容；异步手动清理入口在存储维护页，与自有 GC 分开，保留审计。清单快照最多保留 7 天，GET/HEAD 每次仍回源，不允许失败回退旧索引。
+- 元数据损坏/持久化失败只暂停代理。恢复需正常停机并移走整个 `hub-cache/`，重启自动重建；不能只移走 metadata。缓存关闭会取消上游任务、等待清理与传输后退出。
+- 上游仅匿名拉取公开 Hub 内容，固定 HTTPS 主机和 CDN 清单、直连公共解析 IP，不跟随任意 realm/跳转，不使用环境代理，不转发 light 凭据；外部层 URL 和非 SHA256 内容明确拒绝。域名变更需核对 Docker 官方 allowlist 后调整并测试，不能扩大到任意 R2 域名。
+- 缓存清单/来源和计量集中在存储维护页，自有仓库列表不混入代理条目；页面不触发额外下载。自动测试使用临时存储和受控 HTTP transport；真实 Hub 多架构拉取、CDN、容器重启仍需专项验收。
+
 ## 镜像元数据与验证边界
 
 - 逻辑大小递归统计清单、配置和压缩 layer，按 digest 去重；不沿 subject 回指累加，缺失内容返回错误。同摘要多标签只在当前请求内复用计算结果，不跨请求缓存大小。
@@ -75,8 +93,6 @@
 - 已验证真实 Docker 多级路径、双架构拉取、多标签、layer mount、写入文件再推拉、公开/私有切换及本地 Dockerfile 打包。Buildx 多平台/证明材料、HTTPS 代理、发布容器运行、视觉/真机、磁盘满和断电仍需专项验收。
 
 # 其他备忘
-
-- 项目远端为 `git@github.com:a1zaza/light`，默认分支 `main`。推送源码与运行镜像发布工作流是独立操作，不因 Git push 自动手动发布镜像。
 
 - 回复使用中文，并先称呼会话中获取的 Git 用户名；每会话最多获取一次。前端文案使用中文，回复不粘贴大段代码。
 - 未明确要求不得执行 Git 操作。“提交变更”表示创建 commit 并 push；每次 commit 前记录 `docs/changelogs/YYYY-MM.md`，每条包含时间戳。插件明确要求的 commit 可执行，但不因此授权 push。

@@ -1,17 +1,13 @@
 name: light
 services:
   light:
-    image: light:local
-    build:
-      context: .
-      dockerfile: deploy/Dockerfile
+    image: ${LIGHT_IMAGE:-ghcr.io/a1zaza/light:latest}
     ports:
       - "127.0.0.1:5080:5080"
     volumes:
       - ./data:/var/lib/light
     environment:
       TZ: Asia/Shanghai
-      LIGHT_RATE_LIMIT_IP_HEADER: ${LIGHT_RATE_LIMIT_IP_HEADER:-}
     read_only: true
     cap_drop:
       - ALL

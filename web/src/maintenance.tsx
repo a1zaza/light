@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Database, FileClock, HardDrive, RefreshCw, Trash2 } from 'lucide-react';
 import { api, size, time } from './api';
+import { HubCachePanel, type HubCacheState } from './hub-cache';
 import {
   Badge,
   Empty,
@@ -46,6 +47,7 @@ export type MaintenanceState = {
   catalogAt: string;
   catalogError: string;
   legacy: Record<string, LegacyJob>;
+  hub?: HubCacheState | null;
 };
 const kindLabel = (kind: Kind) =>
   ({ gc: '空间回收', uploads: '废弃上传清理', reindex: '索引重建' })[kind];
@@ -161,6 +163,7 @@ export function MaintenancePage({ revision }: { revision: number }) {
       {!data && !error && <Loading />}
       {data && (
         <>
+          {data.hub && <HubCachePanel data={data.hub} refresh={() => setRefresh((v) => v + 1)} />}
           {data.active && (
             <section className="panel" aria-live="polite">
               <div className="panel-heading">

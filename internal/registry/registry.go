@@ -27,11 +27,18 @@ import (
 	"github.com/opencontainers/go-digest"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"golang.org/x/sys/unix"
+	"light/internal/hubproxy"
 	"light/internal/jsonfile"
+	"light/internal/storageutil"
 	"light/internal/store"
 )
 
 type Registry struct {
+	hub                    *hubproxy.Cache
+	hubMu                  sync.RWMutex
+	hubContext             context.Context
+	closed                 bool
+	ClientIP               func(*http.Request) string
 	maintaining            atomic.Bool
 	UploadProtectionWindow time.Duration
 	leaseMu                sync.Mutex
@@ -82,19 +89,33 @@ func New(ctx context.Context, s *store.Store, reserve uint64) (reg *Registry, er
 		app.Shutdown()
 		return nil, err
 	}
-	ns, err := storage.NewRegistry(ctx, fs, storage.EnableDelete)
+	ns, err := storage.NewRegistry(ctx, storageutil.Driver{StorageDriver: fs}, storage.EnableDelete)
 	if err != nil {
 		app.Shutdown()
 		return nil, err
 	}
-	reg = &Registry{App: app, Namespace: ns, Driver: fs, Auth: c, Store: s, uploads: make(chan struct{}, 4), Reserve: reserve, MaxUploadBytes: 20 << 30, IdleTimeout: 5 * time.Minute, UploadProtectionWindow: DefaultUploadProtectionWindow}
+	reg = &Registry{hubContext: ctx, App: app, Namespace: ns, Driver: fs, Auth: c, Store: s, uploads: make(chan struct{}, 4), Reserve: reserve, MaxUploadBytes: 20 << 30, IdleTimeout: 5 * time.Minute, UploadProtectionWindow: DefaultUploadProtectionWindow}
 	if err = reg.initUploadProtection(ctx); err != nil {
 		app.Shutdown()
 		return nil, err
 	}
 	return reg, nil
 }
-func (reg *Registry) Close() error { return reg.App.Shutdown() }
+func (reg *Registry) Close() error {
+	reg.hubMu.Lock()
+	if reg.closed {
+		reg.hubMu.Unlock()
+		return nil
+	}
+	reg.closed = true
+	cache := reg.hub
+	reg.hubMu.Unlock()
+	if cache != nil {
+		cache.Close()
+	}
+	return reg.App.Shutdown()
+}
+
 func protocolError(w http.ResponseWriter, status int, code, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Docker-Distribution-Api-Version", "registry/2.0")
@@ -142,6 +163,12 @@ func (reg *Registry) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Retry-After", "5")
 		protocolError(w, 503, "UNAVAILABLE", "存储维护中，请稍后重试")
 		return
+	}
+	if cache := reg.HubCache(); cache != nil && cache.Configuration().Enabled {
+		defer http.NewResponseController(w).SetWriteDeadline(time.Time{})
+		if reg.proxyRead(&responseStatus{ResponseWriter: w, timeout: reg.IdleTimeout}, r, cache) {
+			return
+		}
 	}
 	if d, ok := reg.pushLeaseDigest(r); ok {
 		if err := reg.protectUpload(d); err != nil {
@@ -460,19 +487,27 @@ func (reg *Registry) Disk() (used, free, total uint64, err error) {
 	}
 	free = st.Bavail * uint64(st.Bsize)
 	total = st.Blocks * uint64(st.Bsize)
-	err = filepath.WalkDir(filepath.Join(reg.Store.Dir, "registry"), func(path string, d os.DirEntry, e error) error {
-		if e != nil {
-			return e
-		}
-		if d.Type().IsRegular() {
-			i, e := d.Info()
+	for _, root := range []string{"registry", "hub-cache"} {
+		err = filepath.WalkDir(filepath.Join(reg.Store.Dir, root), func(path string, d os.DirEntry, e error) error {
+			if errors.Is(e, os.ErrNotExist) {
+				return nil
+			}
 			if e != nil {
 				return e
 			}
-			used += uint64(i.Size())
+			if d.Type().IsRegular() {
+				i, e := d.Info()
+				if e != nil {
+					return e
+				}
+				used += uint64(i.Size())
+			}
+			return nil
+		})
+		if err != nil {
+			return
 		}
-		return nil
-	})
+	}
 	return
 }
 

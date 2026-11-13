@@ -20,6 +20,7 @@ import (
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/sys/unix"
+	"light/internal/config"
 	"light/internal/jsonfile"
 )
 
@@ -47,6 +48,7 @@ type Repository struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 type State struct {
+	Settings      *config.Settings      `json:"settings,omitempty"`
 	SchemaVersion int                   `json:"schemaVersion"`
 	Revision      int64                 `json:"revision"`
 	Account       *Account              `json:"account,omitempty"`
@@ -110,6 +112,14 @@ func Open(dir string) (*Store, error) {
 	if s.state.SchemaVersion != 1 || len(s.state.Secret) < 32 || s.state.Repositories == nil {
 		s.Close()
 		return nil, errors.New("管理数据格式不受支持或不完整")
+	}
+	if s.state.Settings != nil {
+		normalized, e := s.state.Settings.Normalize()
+		if e != nil {
+			s.Close()
+			return nil, fmt.Errorf("应用设置损坏：%w", e)
+		}
+		s.state.Settings = &normalized
 	}
 	if a := s.state.Account; a != nil {
 		if _, err := decodeAccount(*a); err != nil {

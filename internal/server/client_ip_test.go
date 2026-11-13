@@ -23,7 +23,9 @@ func TestPrivateClientIPHeaderAndFallback(t *testing.T) {
 		{"duplicate", "X-Light-Client-IP", []string{"198.51.100.2", "198.51.100.3"}, "192.0.2.10"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f.server.clientIPHeader = tc.header
+			value := *f.server.activeSettings.Load()
+			value.RateLimitIPHeader = tc.header
+			f.server.activeSettings.Store(&value)
 			req := httptest.NewRequest("GET", "https://registry.test/api/session", nil)
 			req.RemoteAddr = "192.0.2.10:1234"
 			for _, value := range tc.values {
@@ -37,7 +39,9 @@ func TestPrivateClientIPHeaderAndFallback(t *testing.T) {
 }
 func TestProxyClientsHaveIndependentLimits(t *testing.T) {
 	f := newFixture(t)
-	f.server.clientIPHeader = "X-Light-Client-IP"
+	value := *f.server.activeSettings.Load()
+	value.RateLimitIPHeader = "X-Light-Client-IP"
+	f.server.activeSettings.Store(&value)
 	request := func(client string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest("GET", "https://registry.test/auth/token", nil)
 		r.RemoteAddr = "127.0.0.1:1234"

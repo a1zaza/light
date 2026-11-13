@@ -1,0 +1,29 @@
+{
+  "builtAt": "2026-11-13T14:26:34+08:00",
+  "dockerfile": "deploy/Dockerfile",
+  "context": ".",
+  "command": "docker build -f deploy/Dockerfile -t light:local .",
+  "tag": "light:local",
+  "imageID": "sha256:f8a68dab69fd228c56c6cdec4fd56693fa6213d8c17db31a131eef3db4cec9aa",
+  "platform": "linux/amd64",
+  "sizeBytes": 12864965,
+  "user": "1000:1000",
+  "workingDir": "/var/lib/light",
+  "entrypoint": ["/usr/local/bin/light"],
+  "cmd": ["serve"],
+  "healthcheck": [
+    "CMD",
+    "light",
+    "health",
+    "-url",
+    "http://127.0.0.1:5080/readyz"
+  ],
+  "source": "https://github.com/a1zaza/light",
+  "frontendBuildPassed": true,
+  "backendBuildPassed": true,
+  "imageInspected": true,
+  "composeConfigPassed": true,
+  "containersStarted": false,
+  "imagePushed": false,
+  "scope": "Hub 私有代理缓存、页面即时设置与 README 整理后的工作区构建；未运行容器或触发 GHCR 发布。"
+}

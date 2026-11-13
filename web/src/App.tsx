@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { MaintenancePage } from './maintenance';
+import { ApplicationSettingsPanel } from './application-settings';
 import { RepositoryHeader } from './repository-header';
 import { api, APIError, query, registryHost, setCSRF, size, time } from './api';
 import {
@@ -649,6 +650,7 @@ function RepositoriesPage({ publicView, revision }: { publicView: boolean; revis
                     </Badge>
                   </div>
                   <h2 title={repo.name}>{repo.name}</h2>
+                  {!publicView && <Badge>自有</Badge>}
                   <p>{repo.description || '尚未填写仓库说明'}</p>
                   <div className="card-bottom">
                     <span>
@@ -1221,7 +1223,7 @@ function SettingsPage({
       <Heading
         eyebrow="你的实例，你来掌控"
         title="系统设置"
-        description="查看运行配置，管理管理员账户安全。"
+        description="管理应用配置与管理员账户安全。"
       />
       <ErrorBox error={error} />
       <section className="panel">
@@ -1230,7 +1232,7 @@ function SettingsPage({
             <Settings2 size={16} />
             实例信息
           </h2>
-          <Badge>启动参数配置</Badge>
+          <Badge>实例状态</Badge>
         </div>
         <div className="panel-body">
           {data ? (
@@ -1256,6 +1258,7 @@ function SettingsPage({
           </p>
         </div>
       </section>
+      <ApplicationSettingsPanel />
       <section className="panel">
         <div className="panel-heading">
           <h2>

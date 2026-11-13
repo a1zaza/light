@@ -33,7 +33,6 @@ Compose 默认使用 `ghcr.io/a1zaza/light:latest`。若镜像尚未发布或不
 
 ```bash
 docker compose pull
-docker compose run --rm --no-deps light init -username admin
 docker compose up -d
 ```
 
@@ -42,11 +41,16 @@ docker compose up -d
 ```bash
 docker build -f deploy/Dockerfile -t light:local .
 export LIGHT_IMAGE=light:local
-docker compose run --rm --no-deps light init -username admin
 docker compose up -d
 ```
 
-首次初始化时设置管理员密码，至少 8 字节；已有数据无需再次初始化。`LIGHT_IMAGE` 应在后续 Compose 命令所在的终端保持一致。
+首次启动自动创建管理员 `admin`，并在启动日志中输出随机初始密码，无需单独执行初始化命令。使用以下命令查看：
+
+```bash
+docker compose logs light
+```
+
+初始凭据只在创建账号时输出一次，重新启动不会重置或再次输出密码。登录后可在“系统设置”修改账号和密码。`LIGHT_IMAGE` 应在后续 Compose 命令所在的终端保持一致。
 
 启动后访问 **[http://127.0.0.1:5080](http://127.0.0.1:5080)**。公网使用时，为镜像域名配置 HTTPS 反向代理，见[部署与运维](docs/operations.md)。
 
@@ -86,11 +90,10 @@ docker pull registry.example.com/alpine:latest
 后端使用 Go 1.26.11，前端使用 Node.js 24 / npm 11；Registry 基于 CNCF Distribution v3.1.2，控制台使用 React / TypeScript。架构和界面参考 v2way。
 
 ```bash
-go run ./cmd/light init -data .data -username admin
 go run ./cmd/light serve -data .data
 ```
 
-另开终端启动前端：
+首次启动时从后端终端输出获取管理员初始凭据。另开终端启动前端：
 
 ```bash
 cd web

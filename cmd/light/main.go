@@ -38,8 +38,8 @@ func run(args []string) error {
 	}
 	f := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	dir := f.String("data", "/var/lib/light", "数据目录")
-	username := f.String("username", "admin", "管理员名称")
-	stdin := f.Bool("password-stdin", false, "从标准输入读取一行初始密码")
+	username := f.String("username", "admin", "可选离线 init 使用的管理员名称")
+	stdin := f.Bool("password-stdin", false, "可选离线 init 从标准输入读取一行初始密码")
 	dry := f.Bool("dry-run", false, "仅预览 GC")
 	execute := f.Bool("execute", false, "确认执行 GC")
 	maxUpload := f.Int64("max-upload-bytes", 20<<30, "单次上传请求正文上限，0 表示不限")
@@ -123,13 +123,18 @@ func run(args []string) error {
 		return nil
 	case "check":
 		if !st.Ready() {
-			return errors.New("请先执行 light init 初始化管理员")
+			return errors.New("管理员尚未初始化，请先启动 light serve")
 		}
 		fmt.Println("管理数据与实例锁检查通过；镜像完整性需通过拉取验证。")
 		return nil
 	}
+	if args[0] == "serve" {
+		if err = initializeAdministrator(st, os.Stdout); err != nil {
+			return err
+		}
+	}
 	if !st.Ready() {
-		return errors.New("请先执行 light init 初始化管理员")
+		return errors.New("管理员尚未初始化，请先启动 light serve")
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

@@ -13,6 +13,7 @@ COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 COPY web/embed.go ./web/embed.go
 COPY web/fallback/ ./web/fallback/
+COPY web/public/ ./web/public/
 COPY --from=frontend /src/web/dist/ ./web/dist/
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/light ./cmd/light
 

@@ -446,15 +446,10 @@ details > summary {
   margin-top: 4px;
 }
 .brand-mark {
-  display: grid;
-  place-items: center;
+  display: block;
   flex: none;
-  width: 35px;
-  height: 35px;
-  border: 1px solid #3a444d;
-  background: #202d36;
-  border-radius: 8px;
-  color: var(--blue);
+  width: 36px;
+  height: 36px;
 }
 .nav-caption {
   margin-top: 28px;

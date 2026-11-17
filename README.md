@@ -1,18 +1,32 @@
-# light
+<p align="center">
+  <img src="web/public/logo.svg" width="96" height="96" alt="light 标志" />
+</p>
+<h1 align="center">light</h1>
+<p align="center">个人 Docker / OCI 镜像仓库</p>
+<p align="center">
+  <a href="https://github.com/a1zaza/light/actions/workflows/check.yml"><img src="https://github.com/a1zaza/light/actions/workflows/check.yml/badge.svg" alt="代码检查" /></a>
+  <a href="https://github.com/a1zaza/light/actions/workflows/publish-image.yml"><img src="https://img.shields.io/badge/构建-amd64%20%7C%20arm64-63a6ff" alt="构建平台：amd64 和 arm64" /></a>
+  <a href="https://github.com/a1zaza/light/pkgs/container/light"><img src="https://img.shields.io/badge/镜像-ghcr.io%2Fa1zaza%2Flight-273c55" alt="GHCR 容器镜像" /></a>
+</p>
+<p align="center">
+  <a href="#快速开始">快速开始</a> ·
+  <a href="#推送与拉取">使用方法</a> ·
+  <a href="#构建与发布">多架构发布</a> ·
+  <a href="docs/operations.md">部署与运维</a>
+</p>
 
-[![检查](https://github.com/a1zaza/light/actions/workflows/check.yml/badge.svg)](https://github.com/a1zaza/light/actions/workflows/check.yml)
-
-一个适合个人部署的 Docker / OCI 镜像仓库。Go 单程序内嵌中文 Web 控制台，镜像与管理数据保存在本地文件，无需数据库或 Redis。
+Go 单程序内嵌中文 Web 控制台，镜像与管理数据保存在本地文件，无需数据库或 Redis。
 
 ## 功能
 
-- **镜像托管**：支持多级仓库路径、多标签、Docker Schema 2 / OCI 清单和多架构镜像。
-- **公开与私有**：默认私有，可按仓库开放匿名浏览与拉取。
-- **机器人令牌**：用于 Docker、CI 和部署脚本，支持到期、停用与撤销。
-- **Docker Hub 代理**：本地引用缺失时按需回源；清单每次检查上游，blob 固定缓存 7 天，代理内容始终私有。
-- **中文控制台**：管理仓库备注、可见性、标签与原始清单，复制推拉命令。
-- **存储维护**：单标签删除、空间回收、废弃上传清理、索引重建与操作审计。
-- **页面配置**：首次使用默认值，应用设置保存后即时生效。
+| 功能         | 说明                                                                 |
+| ------------ | -------------------------------------------------------------------- |
+| 镜像托管     | 多级路径、多标签、Docker Schema 2 / OCI 清单和多架构镜像             |
+| 访问管理     | 默认私有，可按仓库开放匿名浏览与拉取；机器人令牌支持到期、停用和撤销 |
+| Hub 代理缓存 | 本地引用缺失时回源，清单每次检查上游，blob 固定缓存 7 天             |
+| 中文控制台   | 仓库备注、可见性、标签、原始清单与推拉命令复制                       |
+| 存储维护     | 单标签删除、空间回收、废弃上传清理、索引重建与审计                   |
+| 页面配置     | 首次采用默认值，保存后即时生效                                       |
 
 ## 快速开始
 
@@ -36,7 +50,8 @@ docker compose pull
 docker compose up -d
 ```
 
-### 从源码构建
+<details>
+<summary>从源码构建</summary>
 
 ```bash
 docker build -f deploy/Dockerfile -t light:local .
@@ -44,13 +59,17 @@ export LIGHT_IMAGE=light:local
 docker compose up -d
 ```
 
+`LIGHT_IMAGE` 应在后续 Compose 命令所在的终端保持一致。本地构建使用宿主机架构；多架构镜像通过下方发布流程生成。
+
+</details>
+
 首次启动自动创建管理员 `admin`，并在启动日志中输出随机初始密码，无需单独执行初始化命令。使用以下命令查看：
 
 ```bash
 docker compose logs light
 ```
 
-初始凭据只在创建账号时输出一次，重新启动不会重置或再次输出密码。登录后可在“系统设置”修改账号和密码。`LIGHT_IMAGE` 应在后续 Compose 命令所在的终端保持一致。
+初始凭据只在创建账号时输出一次，重新启动不会重置或再次输出密码。登录后可在“系统设置”修改账号和密码。
 
 启动后访问 **[http://127.0.0.1:5080](http://127.0.0.1:5080)**。公网使用时，为镜像域名配置 HTTPS 反向代理，见[部署与运维](docs/operations.md)。
 
@@ -84,6 +103,24 @@ docker pull registry.example.com/alpine:latest
 - 即使同名自有仓库公开，代理内容仍须机器人认证；缓存可在“存储维护”查看和清理。
 
 默认缓存预算为 **10 GiB**、回源并发 **4**、总超时 **30 分钟**，可在页面调整。服务端需能直连 Docker Hub 及其 CDN；仅支持 Hub 公开镜像，上游拉取限额仍然适用。首次拉取大层可能需要等待完整下载，详见[代理行为与限制](docs/operations.md#docker-hub-私有代理缓存)。
+
+## 构建与发布
+
+[手动发布镜像](https://github.com/a1zaza/light/actions/workflows/publish-image.yml)通过 matrix 在两个原生 runner 上分别构建：
+
+| 镜像平台      | GitHub runner      |
+| ------------- | ------------------ |
+| `linux/amd64` | `ubuntu-24.04`     |
+| `linux/arm64` | `ubuntu-24.04-arm` |
+
+各架构独立缓存、按 digest 推送并交付摘要；全部成功后合并为多架构镜像，发布到：
+
+```text
+ghcr.io/a1zaza/light:latest
+ghcr.io/a1zaza/light:<完整提交 SHA>
+```
+
+Docker 拉取时自动选择对应架构。发布需要维护者手动触发，普通代码 push 只执行检查。使用发布镜像前，请确认工作流成功完成且 GHCR 包可访问。
 
 ## 开发
 

@@ -10,7 +10,7 @@
 - 首次 `serve` 在持有数据目录独占锁后自动创建管理员 `admin`，生成 32 字符随机密码；持久化成功后才将凭据输出到启动控制台。容器部署通过 `docker compose logs light` 查看，直接运行时查看终端输出。
 - 初始密码只在创建账号时输出一次；后续启动不重置、不再次输出已有账号的密码，已改名或改密的账号保持原样。登录后可在系统设置修改，密码要求 8–256 字节。
 - 持久化仅保存密码摘要，审计不包含密码；初始明文只存在于首次启动控制台输出，不另写凭据文件。请保存首次启动日志中的凭据。
-- 发布镜像为 `ghcr.io/a1zaza/light`，当前构建平台为 `linux/amd64`。私有 GHCR 包需先通过 `docker login ghcr.io` 认证。
+- 发布镜像为 `ghcr.io/a1zaza/light`，发布流程支持 `linux/amd64` 和 `linux/arm64`。私有 GHCR 包需先通过 `docker login ghcr.io` 认证。
 
 ### 可选离线初始化
 
@@ -37,7 +37,7 @@ docker compose up -d
 
 启动自动完成首次初始化，更新时保留整个数据目录。可以用 `LIGHT_IMAGE=ghcr.io/a1zaza/light:完整提交SHA` 或 `ghcr.io/a1zaza/light@sha256:摘要` 固定版本。
 
-[镜像发布工作流](../.github/workflows/publish-image.yml) 仅手动触发，生成 latest 与完整提交 SHA 标签；推送代码不会自动发布镜像。工作流存在不代表镜像已发布，使用前需确认其可访问。
+[镜像发布工作流](../.github/workflows/publish-image.yml) 仅手动触发，通过 matrix 在 `ubuntu-24.04` 与 `ubuntu-24.04-arm` 原生 runner 分别构建，各自按 digest 推送并上传摘要；全部成功后合并、校验双架构清单，生成 latest 与完整提交 SHA 标签。构建缓存按架构隔离，发布工作流串行运行，推送代码不会自动发布镜像。工作流存在不代表镜像已发布，使用前需确认其可访问。
 
 ## 反向代理与限流 IP
 

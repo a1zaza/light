@@ -8,10 +8,12 @@ import (
 	"strings"
 )
 
-//go:embed all:dist fallback
+//go:embed all:dist fallback public/logo.svg
 var assets embed.FS
 
 func Handler() http.Handler {
+	brandRoot, _ := fs.Sub(assets, "public")
+	brandFiles := http.FileServer(http.FS(brandRoot))
 	root, _ := fs.Sub(assets, "dist")
 	if _, err := fs.Stat(root, "index.html"); err != nil {
 		root, _ = fs.Sub(assets, "fallback")
@@ -20,6 +22,10 @@ func Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && r.Method != "HEAD" {
 			w.WriteHeader(405)
+			return
+		}
+		if r.URL.Path == "/logo.svg" {
+			brandFiles.ServeHTTP(w, r)
 			return
 		}
 		name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")

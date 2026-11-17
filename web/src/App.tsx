@@ -145,9 +145,14 @@ export function Login({ onLogin }: { onLogin: (session: Session) => void }) {
     <div className="login-layout">
       <section className="login-story">
         <div className="brand">
-          <span className="brand-mark">
-            <Layers3 size={24} />
-          </span>
+          <img
+            className="brand-mark"
+            src="/logo.svg"
+            alt=""
+            aria-hidden="true"
+            width={36}
+            height={36}
+          />
           light<span className="version-label">镜像仓库</span>
         </div>
         <div className="login-copy">
@@ -321,9 +326,14 @@ export function App() {
       )}
       <aside id="sidebar" className={`sidebar ${mobile ? 'open' : ''}`}>
         <div className="brand">
-          <span className="brand-mark">
-            <Layers3 size={23} />
-          </span>
+          <img
+            className="brand-mark"
+            src="/logo.svg"
+            alt=""
+            aria-hidden="true"
+            width={36}
+            height={36}
+          />
           <span>
             light<small>镜像仓库控制台</small>
           </span>

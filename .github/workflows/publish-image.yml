@@ -1,12 +1,26 @@
 name: 手动发布镜像
 on:
   workflow_dispatch:
+concurrency:
+  group: publish-image-${{ github.repository }}
+  cancel-in-progress: false
 permissions:
   contents: read
   packages: write
 jobs:
-  image:
-    runs-on: ubuntu-latest
+  build:
+    name: 构建 ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       - name: 生成小写镜像路径
@@ -19,16 +33,83 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - name: 构建并按摘要推送
+        id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: deploy/Dockerfile
-          platforms: linux/amd64
-          push: true
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ steps.image.outputs.name }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=light-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=light-${{ matrix.arch }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
-          tags: |
-            ${{ steps.image.outputs.name }}:latest
-            ${{ steps.image.outputs.name }}:${{ github.sha }}
+      - name: 导出镜像摘要
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          if [[ ! "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "镜像摘要无效"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+  merge:
+    name: 合并多架构镜像
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 生成小写镜像路径
+        shell: bash
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+      - name: 发布 latest 与提交标签
+        working-directory: ${{ runner.temp }}/digests
+        shell: bash
+        run: |
+          shopt -s nullglob
+          digests=(*)
+          if [[ ${#digests[@]} -ne 2 ]]; then
+            echo "需要 amd64、arm64 两份镜像摘要"
+            exit 1
+          fi
+          sources=()
+          for digest in "${digests[@]}"; do
+            if [[ ! "$digest" =~ ^[0-9a-f]{64}$ ]]; then
+              echo "镜像摘要文件无效"
+              exit 1
+            fi
+            sources+=("$IMAGE_NAME@sha256:$digest")
+          done
+          docker buildx imagetools create --dry-run "${sources[@]}" |
+            jq -e '([.manifests[].platform | select(.os == "linux") | .architecture] | unique | sort) == ["amd64", "arm64"]'
+          docker buildx imagetools create \
+            --tag "$IMAGE_NAME:latest" \
+            --tag "$IMAGE_NAME:$GITHUB_SHA" \
+            "${sources[@]}"
+      - name: 验证多架构清单
+        shell: bash
+        run: |
+          docker buildx imagetools inspect "$IMAGE_NAME:$GITHUB_SHA"
+          docker buildx imagetools inspect "$IMAGE_NAME:$GITHUB_SHA" --raw |
+            jq -e '([.manifests[].platform | select(.os == "linux") | .architecture] | unique | sort) == ["amd64", "arm64"]'

@@ -106,7 +106,7 @@ docker pull registry.example.com/alpine:latest
 
 ## 构建与发布
 
-[手动发布镜像](https://github.com/a1zaza/light/actions/workflows/publish-image.yml)通过 matrix 在两个原生 runner 上分别构建：
+[镜像发布工作流](https://github.com/a1zaza/light/actions/workflows/publish-image.yml)通过 matrix 在两个原生 runner 上分别构建：
 
 | 镜像平台      | GitHub runner      |
 | ------------- | ------------------ |
@@ -120,7 +120,7 @@ ghcr.io/a1zaza/light:latest
 ghcr.io/a1zaza/light:<完整提交 SHA>
 ```
 
-Docker 拉取时自动选择对应架构。发布需要维护者手动触发，普通代码 push 只执行检查。使用发布镜像前，请确认工作流成功完成且 GHCR 包可访问。
+Docker 拉取时自动选择对应架构。推送到 `main` 后，后端测试/vet 与前端类型、测试、格式检查全部通过，才自动发布该提交的镜像；PR 只检查不发布，同时保留维护者手动发布入口。使用发布镜像前，请确认工作流成功完成且 GHCR 包可访问。
 
 ## 开发
 

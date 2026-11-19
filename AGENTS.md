@@ -17,7 +17,8 @@
 - `cmd/light`：CLI 和进程入口；`internal/server`：管理/公开 API 与会话；`internal/registry`：Registry、引用扫描和回收适配；`internal/store`、`internal/jsonfile`：管理持久化；`internal/maintenance`：维护任务；`internal/requesturl`：请求地址与同源校验；`internal/hubproxy`：受控 Hub 客户端、独立缓存与到期清理；`internal/config`：应用设置默认值与校验；`internal/storageutil`：缺失遍历根目录的适配；`web/`：前端及内嵌资源。
 - `.data` 是开发数据目录；Compose 将 `./data` 挂载到容器 `/var/lib/light`。两者不混用，不提交数据、凭据、依赖或构建产物。
 - 品牌主资源为 `web/public/logo.svg`（原创矢量镜像层与光束图形），登录页、侧栏、favicon、开发提示页及 README 共用；Vite 复制 public，Go 内嵌 public 资源以支持无 dist 时的提示页，Docker 后端构建阶段必须复制 web/public。
-- 字体顺序沿用 v2way：`Consolas, 'LXGW WenKai', monospace`；其 lxgwzk.woff2 的实际内部字体为霞鹜臻楷（LXGW ZhenKai），原样放在 web/public/fonts 并附带 SIL OFL 1.1 和来源说明。Consolas 仅通过 local() 使用设备已安装字体，不分发未确认再分发授权的二进制。主页面与提示页共用 public/fonts.css，表单、代码文本继承全局字体；Go public 资源处理须支持 CSS、字体和许可证文件。
+- 字体顺序沿用 v2way：`Consolas, 'LXGW WenKai', monospace`；其 lxgwzk.woff2 的实际内部字体为霞鹜臻楷（LXGW ZhenKai），原样放在 web/public/fonts 并附带 SIL OFL 1.1 和来源说明。用户随后明确要求原样复制参考项目 consolas.woff，现随 public/fonts 提供并通过 URL 加载，不依赖设备字体；Consolas 与霞鹜臻楷各自的版权/许可独立，目录中的 SIL OFL 仅适用于霞鹜臻楷。主页面与提示页共用 public/fonts.css，表单、代码文本继承全局字体；Go public 资源处理须支持 CSS、字体和许可证文件。
+- 页面品牌资源排障先核对线上 /logo.svg 响应与首页 HTML 的 favicon 引用；镜像发布成功后，部署端仍需 pull/up 重建容器，不能把代码 push 或检查通过当成运行版本已更新。
 - 保留 `web/dist/.keep`。单程序发布需先构建前端再编译 Go；没有前端产物时后端提供提示页，开发界面通过 Vite 访问。
 
 ## 启动与检查
@@ -27,7 +28,7 @@
 - 后端：`go run ./cmd/light serve -data .data`，固定监听 `:5080`；前端：在 `web/` 执行 `npm ci --ignore-scripts` 和 `npm run dev -- --port 5174 --strictPort`，入口为 `http://127.0.0.1:5174`。
 - 后端检查：根目录 `go test -race ./...`、`go vet ./...`。前端检查：在 `web/` 执行 `npm run typecheck`、`npm test`、`npm run format:check`，不在根目录执行 npm 脚本。
 - 未经明确要求，不启动开发环境、不执行 Docker build、不自动运行发布构建。已有会话授权仅适用于其明确范围，文档中的命令不是执行授权。
-- 构建使用 `deploy/Dockerfile`，本地命令为 `docker build -f deploy/Dockerfile -t light:local .`。Compose 默认使用 `${LIGHT_IMAGE:-ghcr.io/a1zaza/light:latest}`，不包含 build 配置；本地构建部署需设置 `LIGHT_IMAGE=light:local`。发布工作流通过 matrix 在 amd64/arm64 原生 runner 分别构建并按 digest 推送，汇总两份摘要后生成多架构 latest/完整提交 SHA 标签，Git push 不授权也不自动执行镜像发布。已验证 linux/amd64 本地打包，详见 `docs/local-docker-build-2026-11-13-final.json`；本轮已配置双架构 matrix 与合并校验，实际 arm64 构建/运行及远程发布仍需分别验收。
+- 构建使用 `deploy/Dockerfile`，本地命令为 `docker build -f deploy/Dockerfile -t light:local .`。Compose 默认使用 `${LIGHT_IMAGE:-ghcr.io/a1zaza/light:latest}`，不包含 build 配置；本地构建部署需设置 `LIGHT_IMAGE=light:local`。发布工作流通过 matrix 在 amd64/arm64 原生 runner 分别构建并按 digest 推送，汇总两份摘要后生成多架构 latest/完整提交 SHA 标签，用户已要求 main 的 push 在后端/前端全部检查通过后自动调用同提交的可复用发布工作流，保留独立手动入口；PR/其他分支不自动发布。后续获授权 push 至 main 会按该策略自动发布镜像，不等于自动更新运行中的容器。已验证 linux/amd64 本地打包，详见 `docs/local-docker-build-2026-11-13-final.json`；本轮已配置双架构 matrix 与合并校验，实际 arm64 构建/运行及远程发布仍需分别验收。
 
 ## 界面约定
 

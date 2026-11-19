@@ -144,7 +144,7 @@ README 改为带品牌标识、状态徽章、导航、功能表格与折叠源�
 
 ## 字体与参考项目对齐（2026-11-19）
 
-界面使用与 v2way 相同的 `Consolas, 'LXGW WenKai', monospace` 顺序，去掉额外的 Microsoft YaHei 回退。参考项目 lxgwzk.woff2 实际为霞鹜臻楷（LXGW ZhenKai），已原样本地提供并附带上游 SIL OFL 1.1 及来源校验说明；Consolas 使用设备本地字体，不打包其二进制，未安装时依序回退。
+界面使用与 v2way 相同的 `Consolas, 'LXGW WenKai', monospace` 顺序，去掉额外的 Microsoft YaHei 回退。参考项目 lxgwzk.woff2 实际为霞鹜臻楷（LXGW ZhenKai），已原样本地提供并附带上游 SIL OFL 1.1 及来源校验说明；按用户后续要求，Consolas 也已从参考项目原样复制为 consolas.woff，通过同源字体 URL 加载，避免设备未安装时无法生效；其版权与霞鹜臻楷的 SIL OFL 独立。
 
 主页面和无前端产物提示页共用 fonts.css，字体资源随 Vite 静态资源和 Go public 内嵌资源提供，无外部字体服务依赖。按钮、输入栏、代码和清单继承全局字体。未启动服务或执行发布构建。
 
@@ -153,3 +153,9 @@ README 改为带品牌标识、状态徽章、导航、功能表格与折叠源�
 原首页递归相加 registry/ 与 hub-cache/ 下的所有文件，空代理缓存 metadata/state.json 恰好为 53 字节，会被误计为镜像占用。现改为用 Distribution 的公开枚举/描述符 API 统计已提交 blob，自有清单/配置/层及代理 blob 计入，管理 JSON、缓存清单快照、链接和未完成上传排除；各独立存储中按摘要计数，关闭代理后保留的缓存内容仍计入。未修改现有缓存数据或删除文件。
 
 临时 fixture 验证空缓存首页为 0、多标签/跨仓库共享 blob 不重复计数、未完成上传排除和保留缓存统计。认证检查确认管理员凭据不能用于 Registry（401），有效机器人凭据可以登录（200）；保持原有认证边界，README 与运维指南补充说明。
+
+## main 检查通过后自动发布（2026-11-19）
+
+检查工作流新增 publish job，needs 同时依赖 backend/frontend，仅 main push 且两项检查全部成功时调用同一提交内的可复用 publish-image.yml。发布工作流增加 workflow_call，保留原 workflow_dispatch 手动入口和双架构 matrix、digest 交接、合并校验逻辑；检查 job 仅有 contents:read，发布调用 job 单独授予 packages:write。
+
+同一 workflow/分支的新运行取消旧检查与其自动发布流程，既有发布并发组继续串行化镜像发布。PR 和非 main 的 push 不自动发布。CI 完成后仍需部署端 pull/up 更新容器，工作流不会自动部署生产实例。本轮仅修改工作流与文档，不执行 Git 操作或触发发布。

@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'Consolas';
-  src: local('Consolas'), local('Consolas Regular');
+  src: url('/fonts/consolas.woff') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: swap;

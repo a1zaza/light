@@ -37,7 +37,7 @@ docker compose up -d
 
 启动自动完成首次初始化，更新时保留整个数据目录。可以用 `LIGHT_IMAGE=ghcr.io/a1zaza/light:完整提交SHA` 或 `ghcr.io/a1zaza/light@sha256:摘要` 固定版本。
 
-[镜像发布工作流](../.github/workflows/publish-image.yml) 仅手动触发，通过 matrix 在 `ubuntu-24.04` 与 `ubuntu-24.04-arm` 原生 runner 分别构建，各自按 digest 推送并上传摘要；全部成功后合并、校验双架构清单，生成 latest 与完整提交 SHA 标签。构建缓存按架构隔离，发布工作流串行运行，推送代码不会自动发布镜像。工作流存在不代表镜像已发布，使用前需确认其可访问。
+[检查工作流](../.github/workflows/check.yml) 在 main 的 push 上执行后端与前端检查，全部成功后调用同一提交的[镜像发布工作流](../.github/workflows/publish-image.yml) 自动发布，PR 和其他分支不会自动发布；同时保留独立的手动发布入口。发布通过 matrix 在 `ubuntu-24.04` 与 `ubuntu-24.04-arm` 原生 runner 分别构建，各自按 digest 推送并上传摘要；全部成功后合并、校验双架构清单，生成 latest 与完整提交 SHA 标签。构建缓存按架构隔离，发布工作流串行运行；同一分支有新提交时，会取消尚未完成的旧检查/自动发布流程。部署时等待发布与多架构合并成功，再执行 docker compose pull/up 更新运行镜像；仅推送代码或检查通过并不代表服务器会自动更新容器。
 
 ## 反向代理与限流 IP
 

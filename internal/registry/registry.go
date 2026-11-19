@@ -480,34 +480,35 @@ func (reg *Registry) ImagesForTags(ctx context.Context, name string, tags []stri
 	return out, nil
 }
 
-func (reg *Registry) Disk() (used, free, total uint64, err error) {
+func (reg *Registry) Disk(ctx context.Context) (used, free, total uint64, err error) {
 	var st unix.Statfs_t
 	if err = unix.Statfs(reg.Store.Dir, &st); err != nil {
 		return
 	}
 	free = st.Bavail * uint64(st.Bsize)
 	total = st.Blocks * uint64(st.Bsize)
-	for _, root := range []string{"registry", "hub-cache"} {
-		err = filepath.WalkDir(filepath.Join(reg.Store.Dir, root), func(path string, d os.DirEntry, e error) error {
-			if errors.Is(e, os.ErrNotExist) {
-				return nil
-			}
-			if e != nil {
-				return e
-			}
-			if d.Type().IsRegular() {
-				i, e := d.Info()
-				if e != nil {
-					return e
-				}
-				used += uint64(i.Size())
-			}
-			return nil
-		})
-		if err != nil {
-			return
-		}
+	used, err = storageutil.BlobBytes(ctx, reg.Namespace)
+	if err != nil {
+		return
 	}
+	// Keep cache initialization/close from racing the read-only inspection of
+	// retained content. Native callers hold Gate against deletion and GC.
+	reg.hubMu.RLock()
+	defer reg.hubMu.RUnlock()
+	var cached uint64
+	if reg.hub != nil {
+		cached, err = reg.hub.BlobBytes(ctx)
+	} else {
+		cached, err = hubproxy.StoredBlobBytes(ctx, reg.Store.Dir)
+	}
+	if err != nil {
+		return
+	}
+	if cached > ^uint64(0)-used {
+		err = errors.New("镜像内容大小超过统计上限")
+		return
+	}
+	used += cached
 	return
 }
 

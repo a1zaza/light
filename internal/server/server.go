@@ -383,7 +383,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 		fail(w, 500, "读取仓库失败")
 		return
 	}
-	used, free, total, err := s.Registry.Disk()
+	used, free, total, err := s.Registry.Disk(r.Context())
 	if err != nil {
 		fail(w, 500, "读取存储空间失败")
 		return

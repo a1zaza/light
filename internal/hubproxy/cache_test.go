@@ -507,3 +507,28 @@ func TestLiveConfigurationPreservesInFlightFillAndCache(t *testing.T) {
 	}
 	requireStatus(t, f.req("GET", "blobs", f.dgst.String()), 200)
 }
+
+func TestBlobUsageExcludesSnapshotsAndSupportsRetainedCache(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	used, err := f.c.BlobBytes(ctx)
+	if err != nil || used != 0 {
+		t.Fatal("空缓存元数据被计入镜像占用", err)
+	}
+	requireStatus(t, f.req("GET", "manifests", "latest"), 200)
+	used, err = f.c.BlobBytes(ctx)
+	if err != nil || used != 0 {
+		t.Fatal("清单快照被计入 blob 大小", err)
+	}
+	requireStatus(t, f.req("GET", "blobs", f.dgst.String()), 200)
+	requireStatus(t, f.req("GET", "manifests", "alias"), 200)
+	used, err = f.c.BlobBytes(ctx)
+	if err != nil || used != uint64(len(f.data)) {
+		t.Fatalf("缓存内容大小=%d，错误=%v", used, err)
+	}
+	f.c.Close()
+	used, err = StoredBlobBytes(ctx, f.dir)
+	if err != nil || used != uint64(len(f.data)) {
+		t.Fatalf("未启用代理时未统计保留缓存：%d，错误=%v", used, err)
+	}
+}

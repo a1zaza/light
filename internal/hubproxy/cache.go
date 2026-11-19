@@ -53,6 +53,7 @@ type Cache struct {
 	client        *http.Client
 	driver        driver.StorageDriver
 	repo          distribution.Repository
+	namespace     distribution.Namespace
 	ctx           context.Context
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
@@ -93,6 +94,7 @@ func New(parent context.Context, dir string, cfg Config) (*Cache, error) {
 		cancel()
 		return nil, err
 	}
+	c.namespace = ns
 	named, _ := reference.WithName("cache/blobs")
 	c.repo, err = ns.Repository(ctx, named)
 	if err != nil {

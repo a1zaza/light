@@ -525,7 +525,7 @@ function OverviewPage({ revision }: { revision: number }) {
             {[
               [Package, '镜像仓库', data.repositories, `${data.public} 个公开仓库`],
               [Layers3, '镜像标签', data.tags, '支持多架构镜像'],
-              [HardDrive, '镜像文件占用', size(data.used), '镜像与上传文件的逻辑总大小'],
+              [HardDrive, '镜像文件占用', size(data.used), '镜像内容大小（含代理缓存）'],
               [Bot, '机器人令牌', data.robots, '统一推拉全部仓库'],
             ].map(([Icon, label, value, note]) => {
               const I = Icon as typeof Package;

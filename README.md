@@ -84,7 +84,7 @@ docker push registry.example.com/personal/app:latest
 docker pull registry.example.com/personal/app:latest
 ```
 
-将域名、用户名和镜像名替换为实际值。首次推送自动建立私有仓库，仓库名称决定推拉路径，创建后不可修改。机器人统一推拉全部仓库；网页管理使用管理员账户。
+将域名、用户名和镜像名替换为实际值。首次推送自动建立私有仓库，仓库名称决定推拉路径，创建后不可修改。机器人统一推拉全部仓库；管理员账号仅用于网页管理，不能用于 `docker login`。
 
 在仓库详情页开启“公开”后，其他人即可匿名浏览和拉取。
 

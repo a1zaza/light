@@ -8,6 +8,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { Select } from './select';
 import { copyText } from './clipboard';
 export { Select, SelectOption } from './select';
@@ -196,7 +197,7 @@ export function Modal({
     node?.focus();
     return () => previous?.focus();
   }, []);
-  return (
+  return createPortal(
     <div
       className="modal-mask"
       onMouseDown={(e) => {
@@ -256,6 +257,7 @@ export function Modal({
         </header>
         <div className="modal-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

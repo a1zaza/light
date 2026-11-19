@@ -1,0 +1,60 @@
+{
+  "checkedAt": "2026-11-19T11:52:44+08:00",
+  "browser": "Google Chrome 150.0.7871.114 headless",
+  "fixture": "临时本地 HTML 使用项目 CSS，比较 modal-mask 位于 page-content 内与移至 document.body 后的视口坐标；不是生产页面端到端测试。",
+  "measurements": [
+    {
+      "before": {
+        "viewport": 1280,
+        "maskLeft": 0,
+        "triggerLeft": 345,
+        "menuLeft": 345,
+        "offset": 0
+      },
+      "after": {
+        "viewport": 1280,
+        "maskLeft": 0,
+        "triggerLeft": 345,
+        "menuLeft": 345,
+        "offset": 0
+      }
+    },
+    {
+      "before": {
+        "viewport": 1920,
+        "maskLeft": 160,
+        "triggerLeft": 665,
+        "menuLeft": 825,
+        "offset": 160
+      },
+      "after": {
+        "viewport": 1920,
+        "maskLeft": 0,
+        "triggerLeft": 665,
+        "menuLeft": 665,
+        "offset": 0
+      }
+    },
+    {
+      "before": {
+        "viewport": 2560,
+        "maskLeft": 480,
+        "triggerLeft": 985,
+        "menuLeft": 1465,
+        "offset": 480
+      },
+      "after": {
+        "viewport": 2560,
+        "maskLeft": 0,
+        "triggerLeft": 985,
+        "menuLeft": 985,
+        "offset": 0
+      }
+    }
+  ],
+  "frontendTests": 38,
+  "typecheckPassed": true,
+  "formatCheckPassed": true,
+  "developmentServerStarted": false,
+  "productionAccountsUsed": false
+}

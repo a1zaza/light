@@ -148,3 +148,34 @@ describe('仓库名称不可修改', () => {
     ).toBeTruthy();
   });
 });
+
+it('机器人令牌弹窗的有效期列表留在弹窗内，选中后按选择提交', async () => {
+  const user = userEvent.setup();
+  let submitted: Record<string, unknown> | undefined;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (_path: string, options?: RequestInit) => {
+      if (options?.method === 'POST') {
+        submitted = JSON.parse(options.body as string);
+        return response(201, {
+          robot: { id: 'test-expiry', name: '期限测试', username: 'robot-test' },
+          secret: 'synthetic-fixture-secret',
+        });
+      }
+      return response(200, { items: [] });
+    }),
+  );
+  render(<RobotsPage revision={0} onRefresh={vi.fn()} />);
+  await screen.findByText('还没有机器人令牌');
+  await user.click(screen.getByRole('button', { name: '创建机器人令牌' }));
+  const dialog = screen.getByRole('dialog', { name: '创建机器人令牌' });
+  await user.type(within(dialog).getByLabelText('机器人名称'), '期限测试');
+  const combo = within(dialog).getByRole('combobox', { name: '有效期' });
+  await user.click(combo);
+  await user.click(within(dialog).getByRole('option', { name: '永不过期' }));
+  expect(combo.textContent).toContain('永不过期');
+  expect(screen.queryByRole('listbox')).toBeNull();
+  expect(submitted).toBeUndefined();
+  await user.click(within(dialog).getByRole('button', { name: '创建令牌' }));
+  await waitFor(() => expect(submitted).toEqual({ name: '期限测试', expiresAt: null }));
+});

@@ -33,6 +33,7 @@
 ## 界面约定
 
 - 备注仅在失焦且变化时保存，公开开关立即保存；两者通过串行队列和最新 revision 合并，避免覆盖。保存期间保留新输入，失败保留备注并可重试，公开状态失败回退。不显示“已保存”及空反馈行；匿名浏览只读。
+- Modal 的遮罩和弹窗统一通过 Portal 挂到 document.body，避免 .page-content > * 的 max-width/margin 约束及 backdrop-filter 固定定位参照导致下拉错位；下拉列表仍挂在当前 dialog 内，坐标以视口计算，保留焦点循环和 Esc 行为。宽屏 Chrome 复现/对比见 docs/modal-select-layout-2026-11-19.json。
 - 统一使用 `web/src/select.tsx` 的 `Select`/`SelectOption`，从 `components.tsx` 导出，不新增原生下拉。`onChange` 接收选项字符串；Portal 挂载到当前弹窗或 body，保留键盘、焦点和无障碍关联。
 - 所有复制入口使用 `CopyText` 与 `clipboard.ts`。显示单行省略但复制完整 value；Clipboard API 不可用/拒绝时回退临时 textarea 与 execCommand，节点位于当前弹窗内，结束后清理并恢复焦点/选区。失败明确提示手动复制。
 - 原始清单不创建独立高度限制或滚动区，由 modal-body 统一滚动。

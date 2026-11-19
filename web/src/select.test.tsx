@@ -68,13 +68,18 @@ it('弹窗内列表保持在弹窗中，Esc先收起列表再关闭弹窗', asyn
   const user = userEvent.setup(),
     close = vi.fn();
   render(
-    <Modal title="测试弹窗" onClose={close}>
-      <Example />
-    </Modal>,
+    <div className="page-content" style={{ maxWidth: 1600 }}>
+      <Modal title="测试弹窗" onClose={close}>
+        <Example />
+      </Modal>
+    </div>,
   );
+  const dialog = screen.getByRole('dialog');
+  expect(dialog.parentElement?.parentElement).toBe(document.body);
+  expect(document.querySelector('.page-content')?.contains(dialog)).toBe(false);
   const combo = screen.getByRole('combobox');
   await user.click(combo);
-  expect(within(screen.getByRole('dialog')).getByRole('listbox')).toBeTruthy();
+  expect(within(dialog).getByRole('listbox')).toBeTruthy();
   await user.keyboard('{Escape}');
   expect(close).not.toHaveBeenCalled();
   await user.keyboard('{Escape}');
@@ -150,4 +155,42 @@ it('禁用状态变化时关闭已打开的列表', async () => {
   view.rerender(<Example disabled />);
   await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull());
   expect(screen.getByRole('combobox').matches(':disabled')).toBe(true);
+});
+
+function ModalExample() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>打开弹窗</button>
+      {open && (
+        <Modal title="焦点测试" onClose={() => setOpen(false)}>
+          <Example />
+        </Modal>
+      )}
+    </>
+  );
+}
+it('弹窗移至 body 后仍循环焦点，关闭还原触发按钮', async () => {
+  const user = userEvent.setup();
+  render(<ModalExample />);
+  const opener = screen.getByRole('button', { name: '打开弹窗' });
+  await user.click(opener);
+  const close = screen.getByRole('button', { name: '关闭弹窗' });
+  await user.tab();
+  expect(document.activeElement).toBe(close);
+  await user.tab();
+  const combo = screen.getByRole('combobox');
+  expect(document.activeElement).toBe(combo);
+  await user.keyboard('{ArrowDown}{Escape}');
+  expect(screen.getByRole('dialog')).toBeTruthy();
+  await user.tab();
+  const submit = screen.getByRole('button', { name: '提交' });
+  expect(document.activeElement).toBe(submit);
+  await user.tab();
+  expect(document.activeElement).toBe(close);
+  await user.tab({ shift: true });
+  expect(document.activeElement).toBe(submit);
+  await user.click(close);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.activeElement).toBe(opener);
 });

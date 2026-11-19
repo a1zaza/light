@@ -141,3 +141,9 @@ README 与运维指南改为直接启动，从 `docker compose logs light` 读�
 新增原创 SVG logo，以镜像层叠和光束表达镜像托管与 light 品牌；统一用于登录、侧栏、favicon、无前端产物提示页及 README。主资源存于 web/public/logo.svg，由 Vite 与 Go 内嵌分发，Dockerfile 后端阶段已补齐资源复制。
 
 README 改为带品牌标识、状态徽章、导航、功能表格与折叠源码部署入口的 GitHub 首页，并增加多架构发布说明。发布工作流仍手动触发，matrix 分别运行 linux/amd64（ubuntu-24.04）、linux/arm64（ubuntu-24.04-arm）；按架构缓存并按 digest 推送，交接两份摘要，全部成功后合并和验证双架构镜像，发布 latest 与完整提交 SHA 标签。实际远程工作流、arm64 镜像运行和 GHCR 发布仍待执行，本轮不因修改工作流自动发布。
+
+## 字体与参考项目对齐（2026-11-19）
+
+界面使用与 v2way 相同的 `Consolas, 'LXGW WenKai', monospace` 顺序，去掉额外的 Microsoft YaHei 回退。参考项目 lxgwzk.woff2 实际为霞鹜臻楷（LXGW ZhenKai），已原样本地提供并附带上游 SIL OFL 1.1 及来源校验说明；Consolas 使用设备本地字体，不打包其二进制，未安装时依序回退。
+
+主页面和无前端产物提示页共用 fonts.css，字体资源随 Vite 静态资源和 Go public 内嵌资源提供，无外部字体服务依赖。按钮、输入栏、代码和清单继承全局字体。未启动服务或执行发布构建。

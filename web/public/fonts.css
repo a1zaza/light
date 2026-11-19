@@ -1,0 +1,16 @@
+@font-face {
+  font-family: 'Consolas';
+  src: local('Consolas'), local('Consolas Regular');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* v2way uses this CSS family name for the LXGW ZhenKai font asset. */
+@font-face {
+  font-family: 'LXGW WenKai';
+  src: url('/fonts/lxgwzk.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
